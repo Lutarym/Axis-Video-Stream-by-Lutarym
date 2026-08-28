@@ -51,3 +51,9 @@ PARAM_GROUP_BRAND: Final = "Brand"
 PARAM_GROUP_PROPERTIES: Final = "Properties"
 PARAM_GROUP_MPEG: Final = "Image.I0.MPEG"
 PARAM_GROUP_STREAMPROFILE: Final = "StreamProfile"
+PARAM_RESOLUTIONS: Final = "Properties.Image.Resolution"
+
+FPS_MIN: Final = 1
+FPS_MAX: Final = 30
+COMPRESSION_MIN: Final = 0
+COMPRESSION_MAX: Final = 100

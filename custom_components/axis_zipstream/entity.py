@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import AxisCoordinator
@@ -29,3 +30,22 @@ class AxisEntity(CoordinatorEntity[AxisCoordinator]):
             serial_number=device.get("serial") or None,
             configuration_url=f"http://{coordinator.client.host}/",
         )
+
+
+class AxisProfileOptionEntity(AxisEntity):
+    """Base for entities that change one setting of the owned stream profile.
+
+    Writing goes through the config entry options. The update listener in
+    __init__.py then writes the whole Parameters string into the profile that
+    this integration owns. Global camera parameters are never touched, and no
+    other stream profile is modified.
+    """
+
+    _option_key: str
+    _attr_entity_category = EntityCategory.CONFIG
+
+    async def _async_store_option(self, value: object) -> None:
+        """Persist a new value for this entity's option key."""
+        options = dict(self._entry.options)
+        options[self._option_key] = value
+        self.hass.config_entries.async_update_entry(self._entry, options=options)

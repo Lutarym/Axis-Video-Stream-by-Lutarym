@@ -47,6 +47,26 @@
     "select": {
       "stream_profile": {
         "name": "Stream profile"
+      },
+      "resolution": {
+        "name": "Resolution"
+      },
+      "zipstream_strength": {
+        "name": "Zipstream strength"
+      },
+      "zipstream_fps_mode": {
+        "name": "Zipstream FPS mode"
+      },
+      "zipstream_gop_mode": {
+        "name": "Zipstream GOP mode"
+      }
+    },
+    "number": {
+      "fps": {
+        "name": "Frame rate"
+      },
+      "compression": {
+        "name": "Compression"
       }
     }
   }

@@ -42,7 +42,12 @@ from .vapix import (
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS: list[Platform] = [Platform.CAMERA, Platform.SELECT, Platform.SENSOR]
+PLATFORMS: list[Platform] = [
+    Platform.CAMERA,
+    Platform.NUMBER,
+    Platform.SELECT,
+    Platform.SENSOR,
+]
 UPDATE_INTERVAL = timedelta(minutes=5)
 
 
@@ -54,6 +59,7 @@ class AxisData:
     mpeg_parameters: dict[str, str] = field(default_factory=dict)
     allowed_zstrength: list[str] = field(default_factory=list)
     applications: list[AcapApplication] = field(default_factory=list)
+    resolutions: list[str] = field(default_factory=list)
 
 
 class AxisCoordinator(DataUpdateCoordinator[AxisData]):
@@ -81,6 +87,8 @@ class AxisCoordinator(DataUpdateCoordinator[AxisData]):
         except VapixError as err:
             raise UpdateFailed(str(err)) from err
 
+        resolutions = await self.client.list_resolutions()
+
         allowed = await self.client.list_allowed_values("Image.I0.MPEG.ZStrength")
         if not allowed:
             _LOGGER.debug(
@@ -107,6 +115,7 @@ class AxisCoordinator(DataUpdateCoordinator[AxisData]):
             mpeg_parameters=mpeg,
             allowed_zstrength=allowed,
             applications=applications,
+            resolutions=resolutions,
         )
 
 
@@ -211,7 +220,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: ConfigEntry) -> Non
             )
         except VapixError as err:
             _LOGGER.error("Could not write stream profile: %s", err)
-    await hass.config_entries.async_reload(entry.entry_id)
+    await coordinator.async_request_refresh()
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

@@ -10,7 +10,7 @@ from homeassistant.config_entries import (
     ConfigEntry,
     ConfigFlow,
     ConfigFlowResult,
-    OptionsFlowWithReload,
+    OptionsFlow,
 )
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import callback
@@ -103,7 +103,7 @@ class AxisZipstreamConfigFlow(ConfigFlow, domain=DOMAIN):
         return AxisZipstreamOptionsFlow()
 
 
-class AxisZipstreamOptionsFlow(OptionsFlowWithReload):
+class AxisZipstreamOptionsFlow(OptionsFlow):
     """Change the settings of the stream profile this integration owns."""
 
     async def async_step_init(

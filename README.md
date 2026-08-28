@@ -52,6 +52,17 @@ greift eine Ersatzliste.
 | `camera.<gerät>` | Camera | Livebild des ausgewählten Profils |
 | `select.<gerät>_stream_profil` | Select | Auswahl des Profils für das Livebild |
 | `sensor.<gerät>_<app>` | Sensor | Status einer installierten ACAP-Anwendung |
+| `select.<gerät>_auflösung` | Select | Auflösung, Liste aus der Kamera gelesen |
+| `select.<gerät>_zipstream_stärke` | Select | Zipstream Stärke |
+| `select.<gerät>_zipstream_fps_modus` | Select | `fixed` oder `dynamic` |
+| `select.<gerät>_zipstream_gop_modus` | Select | `fixed` oder `dynamic` |
+| `number.<gerät>_bildrate` | Number | Bildrate 1 bis 30 |
+| `number.<gerät>_komprimierung` | Number | Komprimierungsgrad 0 bis 100 |
+
+Alle Einstell-Entitäten schreiben ausschließlich in das Stream-Profil
+`HomeAssistant`. Die Auflösungsliste stammt aus
+`Properties.Image.Resolution`, die Liste der Zipstream-Stärken aus
+`param.cgi?action=listdefinitions`.
 
 Je installierter ACAP-Anwendung wird ein Diagnose-Sensor angelegt. Der Zustand
 ist der Status laut Kamera, etwa `Running`. Als Attribute stehen Hersteller,

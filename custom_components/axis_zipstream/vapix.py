@@ -326,6 +326,23 @@ class VapixClient:
             )
         return applications
 
+    async def list_resolutions(self) -> list[str]:
+        """Return the resolutions this camera supports.
+
+        Read from Properties.Image.Resolution, which Axis documents as the
+        way to check supported resolutions. Returns an empty list if the
+        camera does not report it, so callers can fall back.
+        """
+        try:
+            props = await self.list_parameters("Properties.Image.Resolution")
+        except VapixError as err:
+            _LOGGER.debug("Could not read supported resolutions: %s", err)
+            return []
+
+        raw = props.get("Properties.Image.Resolution", "")
+        resolutions = [item.strip() for item in raw.split(",") if item.strip()]
+        return resolutions
+
     async def snapshot(self, resolution: str | None = None) -> bytes:
         """Fetch a single JPEG image."""
         params: dict[str, str] = {}
