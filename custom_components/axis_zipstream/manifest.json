@@ -1,0 +1,13 @@
+{
+  "domain": "axis_zipstream",
+  "name": "Axis Zipstream",
+  "version": "0.1.0",
+  "documentation": "https://github.com/Lutarym/axis_zipstream",
+  "issue_tracker": "https://github.com/Lutarym/axis_zipstream/issues",
+  "codeowners": ["@Lutarym"],
+  "config_flow": true,
+  "iot_class": "local_polling",
+  "integration_type": "device",
+  "dependencies": ["stream"],
+  "requirements": []
+}

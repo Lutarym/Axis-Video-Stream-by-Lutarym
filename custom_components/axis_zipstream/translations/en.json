@@ -1,0 +1,53 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to the Axis camera",
+        "description": "Enter the address and credentials of the camera. The integration reads the camera configuration and creates its own stream profile. Existing profiles and global camera settings are left untouched.",
+        "data": {
+          "host": "IP address or hostname",
+          "username": "Username",
+          "password": "Password",
+          "port": "HTTP port"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "The camera could not be reached at that address.",
+      "invalid_auth": "The camera rejected the username or password.",
+      "unknown": "Unexpected error. Check the Home Assistant log for details."
+    },
+    "abort": {
+      "already_configured": "This camera is already set up."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Stream settings",
+        "description": "These values are written to the HomeAssistant stream profile only. Other stream profiles and the global camera settings are not changed.",
+        "data": {
+          "resolution": "Resolution",
+          "fps": "Frame rate (fps)",
+          "compression": "Compression",
+          "videozstrength": "Zipstream strength",
+          "videozfpsmode": "Zipstream FPS mode",
+          "videozgopmode": "Zipstream GOP mode"
+        },
+        "data_description": {
+          "compression": "Axis recommends 30. Higher values mean stronger compression.",
+          "videozstrength": "Read from the camera. Higher values save more bandwidth.",
+          "videozfpsmode": "Dynamic lowers the frame rate when there is little motion. Some clients may make this look like a frozen stream.",
+          "videozgopmode": "Dynamic can produce long keyframe intervals, which some players handle poorly. Fixed works everywhere."
+        }
+      }
+    }
+  },
+  "entity": {
+    "select": {
+      "stream_profile": {
+        "name": "Stream profile"
+      }
+    }
+  }
+}

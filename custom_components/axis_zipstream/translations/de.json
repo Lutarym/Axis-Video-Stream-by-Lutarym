@@ -1,0 +1,53 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Mit der Axis Kamera verbinden",
+        "description": "Adresse und Zugangsdaten der Kamera eingeben. Die Integration liest die Kamerakonfiguration aus und legt ein eigenes Stream-Profil an. Vorhandene Profile und globale Kameraeinstellungen bleiben unverändert.",
+        "data": {
+          "host": "IP-Adresse oder Hostname",
+          "username": "Benutzername",
+          "password": "Passwort",
+          "port": "HTTP-Port"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Die Kamera ist unter dieser Adresse nicht erreichbar.",
+      "invalid_auth": "Die Kamera hat Benutzername oder Passwort abgelehnt.",
+      "unknown": "Unerwarteter Fehler. Details stehen im Home Assistant Protokoll."
+    },
+    "abort": {
+      "already_configured": "Diese Kamera ist bereits eingerichtet."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Stream-Einstellungen",
+        "description": "Diese Werte werden ausschließlich in das Stream-Profil HomeAssistant geschrieben. Andere Stream-Profile und die globalen Kameraeinstellungen werden nicht verändert.",
+        "data": {
+          "resolution": "Auflösung",
+          "fps": "Bildrate (fps)",
+          "compression": "Komprimierung",
+          "videozstrength": "Zipstream Stärke",
+          "videozfpsmode": "Zipstream FPS-Modus",
+          "videozgopmode": "Zipstream GOP-Modus"
+        },
+        "data_description": {
+          "compression": "Axis empfiehlt 30. Höhere Werte bedeuten stärkere Komprimierung.",
+          "videozstrength": "Aus der Kamera ausgelesen. Höhere Werte sparen mehr Bandbreite.",
+          "videozfpsmode": "Dynamic senkt die Bildrate bei wenig Bewegung. In manchen Clients kann der Stream dadurch eingefroren wirken.",
+          "videozgopmode": "Dynamic kann lange Keyframe-Abstände erzeugen, mit denen manche Player schlecht umgehen. Fixed funktioniert überall."
+        }
+      }
+    }
+  },
+  "entity": {
+    "select": {
+      "stream_profile": {
+        "name": "Stream-Profil"
+      }
+    }
+  }
+}
