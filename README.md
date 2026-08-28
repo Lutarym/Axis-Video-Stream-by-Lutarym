@@ -53,11 +53,16 @@ greift eine Ersatzliste.
 | `select.<gerät>_stream_profil` | Select | Auswahl des Profils für das Livebild |
 | `sensor.<gerät>_<app>` | Sensor | Status einer installierten ACAP-Anwendung |
 | `select.<gerät>_auflösung` | Select | Auflösung, Liste aus der Kamera gelesen |
+| `select.<gerät>_videocodec` | Select | Codec, abgeleitet aus `Properties.Image.Format` |
 | `select.<gerät>_zipstream_stärke` | Select | Zipstream Stärke |
 | `select.<gerät>_zipstream_fps_modus` | Select | `fixed` oder `dynamic` |
 | `select.<gerät>_zipstream_gop_modus` | Select | `fixed` oder `dynamic` |
 | `number.<gerät>_bildrate` | Number | Bildrate 1 bis 30 |
 | `number.<gerät>_komprimierung` | Number | Komprimierungsgrad 0 bis 100 |
+
+Zipstream ist eine H.264 Technik. Sobald ein anderer Codec gewählt ist,
+werden die drei Zipstream-Entitäten als nicht verfügbar markiert und die
+`videoz*` Argumente nicht in das Profil geschrieben.
 
 Alle Einstell-Entitäten schreiben ausschließlich in das Stream-Profil
 `HomeAssistant`. Die Auflösungsliste stammt aus

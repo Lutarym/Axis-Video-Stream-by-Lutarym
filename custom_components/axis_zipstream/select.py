@@ -12,15 +12,18 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from . import AxisCoordinator
 from .const import (
     DEFAULT_RESOLUTION,
+    DEFAULT_VIDEOCODEC,
     DOMAIN,
     OPT_ACTIVE_PROFILE,
     OPT_RESOLUTION,
+    OPT_VIDEOCODEC,
     OPT_ZFPSMODE,
     OPT_ZGOPMODE,
     OPT_ZSTRENGTH,
     OWNED_PROFILE_NAME,
     ZFPS_MODES,
     ZGOP_MODES,
+    ZIPSTREAM_CODEC,
     ZSTRENGTH_FALLBACK,
 )
 from .entity import AxisEntity, AxisProfileOptionEntity
@@ -39,6 +42,7 @@ async def async_setup_entry(
         [
             AxisStreamProfileSelect(coordinator, entry),
             AxisResolutionSelect(coordinator, entry),
+            AxisVideoCodecSelect(coordinator, entry),
             AxisZipstreamStrengthSelect(coordinator, entry),
             AxisFpsModeSelect(coordinator, entry),
             AxisGopModeSelect(coordinator, entry),
@@ -125,7 +129,37 @@ class AxisResolutionSelect(_ProfileSelect):
         return [DEFAULT_RESOLUTION]
 
 
-class AxisZipstreamStrengthSelect(_ProfileSelect):
+class _ZipstreamSelect(_ProfileSelect):
+    """A Zipstream setting. Only meaningful while the codec is H.264."""
+
+    @property
+    def available(self) -> bool:
+        """Unavailable when another codec is selected."""
+        codec = str(self._entry.options.get(OPT_VIDEOCODEC, DEFAULT_VIDEOCODEC))
+        return super().available and codec == ZIPSTREAM_CODEC
+
+
+class AxisVideoCodecSelect(_ProfileSelect):
+    """Video codec, restricted to what the camera reports."""
+
+    _attr_translation_key = "videocodec"
+    _attr_icon = "mdi:video-box"
+    _option_key = OPT_VIDEOCODEC
+    _default = DEFAULT_VIDEOCODEC
+
+    def __init__(self, coordinator: AxisCoordinator, entry: ConfigEntry) -> None:
+        """Initialise."""
+        super().__init__(coordinator, entry, "videocodec")
+
+    @property
+    def options(self) -> list[str]:
+        """Codecs derived from Properties.Image.Format."""
+        if self.coordinator.data and self.coordinator.data.codecs:
+            return self.coordinator.data.codecs
+        return [DEFAULT_VIDEOCODEC]
+
+
+class AxisZipstreamStrengthSelect(_ZipstreamSelect):
     """Zipstream strength, using the values the camera reports."""
 
     _attr_translation_key = "zipstream_strength"
@@ -145,7 +179,7 @@ class AxisZipstreamStrengthSelect(_ProfileSelect):
         return list(ZSTRENGTH_FALLBACK)
 
 
-class AxisFpsModeSelect(_ProfileSelect):
+class AxisFpsModeSelect(_ZipstreamSelect):
     """Zipstream dynamic FPS mode."""
 
     _attr_translation_key = "zipstream_fps_mode"
@@ -163,7 +197,7 @@ class AxisFpsModeSelect(_ProfileSelect):
         return list(ZFPS_MODES)
 
 
-class AxisGopModeSelect(_ProfileSelect):
+class AxisGopModeSelect(_ZipstreamSelect):
     """Zipstream GOP mode."""
 
     _attr_translation_key = "zipstream_gop_mode"

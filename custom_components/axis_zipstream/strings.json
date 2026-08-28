@@ -59,6 +59,9 @@
       },
       "zipstream_gop_mode": {
         "name": "Zipstream GOP mode"
+      },
+      "videocodec": {
+        "name": "Video codec"
       }
     },
     "number": {

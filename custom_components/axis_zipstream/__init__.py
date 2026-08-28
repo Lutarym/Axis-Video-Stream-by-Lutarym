@@ -19,16 +19,21 @@ from .const import (
     DEFAULT_FPS,
     DEFAULT_PORT,
     DEFAULT_RESOLUTION,
+    DEFAULT_VIDEOCODEC,
     DOMAIN,
+    FORMAT_TO_CODEC,
     MIN_EMBEDDED_DEVELOPMENT_VERSION,
     OPT_COMPRESSION,
     OPT_FPS,
     OPT_RESOLUTION,
     OPT_ZFPSMODE,
     OPT_ZGOPMODE,
+    OPT_VIDEOCODEC,
     OPT_ZSTRENGTH,
     OWNED_PROFILE_DESCRIPTION,
     OWNED_PROFILE_NAME,
+    VIDEOCODECS,
+    ZIPSTREAM_CODEC,
     ZSTRENGTH_FALLBACK,
 )
 from .vapix import (
@@ -60,6 +65,7 @@ class AxisData:
     allowed_zstrength: list[str] = field(default_factory=list)
     applications: list[AcapApplication] = field(default_factory=list)
     resolutions: list[str] = field(default_factory=list)
+    codecs: list[str] = field(default_factory=list)
 
 
 class AxisCoordinator(DataUpdateCoordinator[AxisData]):
@@ -88,6 +94,12 @@ class AxisCoordinator(DataUpdateCoordinator[AxisData]):
             raise UpdateFailed(str(err)) from err
 
         resolutions = await self.client.list_resolutions()
+        formats = await self.client.list_formats()
+        codecs = [
+            codec
+            for codec in VIDEOCODECS
+            if codec in {FORMAT_TO_CODEC.get(fmt) for fmt in formats}
+        ]
 
         allowed = await self.client.list_allowed_values("Image.I0.MPEG.ZStrength")
         if not allowed:
@@ -116,18 +128,26 @@ class AxisCoordinator(DataUpdateCoordinator[AxisData]):
             allowed_zstrength=allowed,
             applications=applications,
             resolutions=resolutions,
+            codecs=codecs or [DEFAULT_VIDEOCODEC],
         )
 
 
 def build_profile_parameters(entry: ConfigEntry) -> dict[str, str]:
     """Assemble the Parameters string for the profile this integration owns."""
     options = entry.options
+    codec = str(options.get(OPT_VIDEOCODEC, DEFAULT_VIDEOCODEC))
     params: dict[str, str] = {
-        "videocodec": "h264",
+        "videocodec": codec,
         "resolution": options.get(OPT_RESOLUTION, DEFAULT_RESOLUTION),
         "fps": str(options.get(OPT_FPS, DEFAULT_FPS)),
         "compression": str(options.get(OPT_COMPRESSION, DEFAULT_COMPRESSION)),
     }
+
+    # Zipstream is an H.264 technology. Sending videoz* with another codec
+    # would be silently ignored by the camera, which hides the mistake.
+    if codec != ZIPSTREAM_CODEC:
+        return params
+
     if zstrength := options.get(OPT_ZSTRENGTH):
         params["videozstrength"] = str(zstrength)
     if zfps := options.get(OPT_ZFPSMODE):

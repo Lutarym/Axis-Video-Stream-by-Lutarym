@@ -326,6 +326,21 @@ class VapixClient:
             )
         return applications
 
+    async def list_formats(self) -> list[str]:
+        """Return the image formats this camera reports.
+
+        Read from Properties.Image.Format. These are format names, not RTSP
+        videocodec argument values. Callers must map them.
+        """
+        try:
+            props = await self.list_parameters("Properties.Image.Format")
+        except VapixError as err:
+            _LOGGER.debug("Could not read supported formats: %s", err)
+            return []
+
+        raw = props.get("Properties.Image.Format", "")
+        return [item.strip().lower() for item in raw.split(",") if item.strip()]
+
     async def list_resolutions(self) -> list[str]:
         """Return the resolutions this camera supports.
 

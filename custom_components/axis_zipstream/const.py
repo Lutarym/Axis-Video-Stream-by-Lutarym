@@ -17,6 +17,7 @@ OPT_COMPRESSION: Final = "compression"
 OPT_ZSTRENGTH: Final = "videozstrength"
 OPT_ZFPSMODE: Final = "videozfpsmode"
 OPT_ZGOPMODE: Final = "videozgopmode"
+OPT_VIDEOCODEC: Final = "videocodec"
 
 # Name of the stream profile this integration creates and owns.
 # The integration writes ONLY to this profile. It never touches other
@@ -28,6 +29,7 @@ DEFAULT_PORT: Final = 80
 DEFAULT_RESOLUTION: Final = "1280x720"
 DEFAULT_FPS: Final = 15
 DEFAULT_COMPRESSION: Final = 30
+DEFAULT_VIDEOCODEC: Final = "h264"
 
 # Documented by Axis: fixed or dynamic. Confirmed present on this device via
 # root.Image.I0.MPEG.ZFpsMode / ZGopMode.
@@ -52,6 +54,24 @@ PARAM_GROUP_PROPERTIES: Final = "Properties"
 PARAM_GROUP_MPEG: Final = "Image.I0.MPEG"
 PARAM_GROUP_STREAMPROFILE: Final = "StreamProfile"
 PARAM_RESOLUTIONS: Final = "Properties.Image.Resolution"
+PARAM_FORMATS: Final = "Properties.Image.Format"
+
+# Documented valid values of the RTSP videocodec argument. Note that the
+# argument value is "jpeg", while Properties.Image.Format reports both
+# "jpeg" and "mjpeg". They are not the same namespace.
+VIDEOCODECS: Final = ["h264", "mpeg4", "jpeg"]
+
+# Maps entries of Properties.Image.Format onto videocodec argument values.
+FORMAT_TO_CODEC: Final = {
+    "h264": "h264",
+    "mpeg4": "mpeg4",
+    "jpeg": "jpeg",
+    "mjpeg": "jpeg",
+}
+
+# Zipstream is an H.264 technology. For any other codec the videoz*
+# arguments are omitted rather than sent and silently ignored.
+ZIPSTREAM_CODEC: Final = "h264"
 
 FPS_MIN: Final = 1
 FPS_MAX: Final = 30
