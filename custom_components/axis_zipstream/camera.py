@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import time
 
 from homeassistant.components.camera import Camera, CameraEntityFeature
 from homeassistant.config_entries import ConfigEntry
@@ -15,8 +14,8 @@ from .const import (
     DEFAULT_RESOLUTION,
     DOMAIN,
     OPT_ACTIVE_PROFILE,
+    OPT_RESOLUTION,
     OWNED_PROFILE_NAME,
-    SNAPSHOT_CACHE_SECONDS,
 )
 from .entity import AxisEntity
 from .vapix import VapixError
@@ -45,8 +44,6 @@ class AxisZipstreamCamera(AxisEntity, Camera):
         AxisEntity.__init__(self, coordinator, entry)
         Camera.__init__(self)
         self._attr_unique_id = f"{self._base_unique_id}_camera"
-        self._image: bytes | None = None
-        self._image_time: float = 0.0
 
     @property
     def _active_profile(self) -> str:
@@ -62,31 +59,19 @@ class AxisZipstreamCamera(AxisEntity, Camera):
     ) -> bytes | None:
         """Fetch a still image over VAPIX.
 
-        Home Assistant asks several times in quick succession when more than
-        one dashboard card is open. A short cache keeps that from turning
-        into one camera request per card.
+        Nothing is stored between calls: every request goes to the camera and
+        returns a freshly fetched picture.
         """
-        now = time.monotonic()
-        if self._image is not None and now - self._image_time < SNAPSHOT_CACHE_SECONDS:
-            return self._image
-
-        resolution = self._entry.options.get("resolution", DEFAULT_RESOLUTION)
+        resolution = self._entry.options.get(OPT_RESOLUTION, DEFAULT_RESOLUTION)
         try:
-            image = await self.coordinator.client.snapshot(resolution)
+            return await self.coordinator.client.snapshot(resolution)
         except VapixError as err:
-            # Never serve the previous image here. Doing so hides the failure
-            # and looks exactly like a frozen picture.
-            self._image = None
             _LOGGER.warning(
                 "Snapshot from %s failed: %s",
                 self.coordinator.client.host,
                 err,
             )
             return None
-
-        self._image = image
-        self._image_time = now
-        return image
 
     @property
     def extra_state_attributes(self) -> dict[str, str]:

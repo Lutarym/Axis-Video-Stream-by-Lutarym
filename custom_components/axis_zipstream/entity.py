@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import EntityCategory
@@ -9,6 +11,8 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import AxisCoordinator
 from .const import DOMAIN
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class AxisEntity(CoordinatorEntity[AxisCoordinator]):
@@ -48,4 +52,12 @@ class AxisProfileOptionEntity(AxisEntity):
         """Persist a new value for this entity's option key."""
         options = dict(self._entry.options)
         options[self._option_key] = value
+        _LOGGER.debug(
+            "Writing %s=%s for entry %r (entry_id=%s, unique_id=%s)",
+            self._option_key,
+            value,
+            self._entry.title,
+            self._entry.entry_id,
+            self._entry.unique_id,
+        )
         self.hass.config_entries.async_update_entry(self._entry, options=options)

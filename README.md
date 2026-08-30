@@ -83,7 +83,10 @@ Die Abfrage läuft nur, wenn die Kamera
 - Gleichzeitige Anfragen an dieselbe Kamera sind auf 2 begrenzt.
 - Fähigkeiten der Kamera (Auflösungen, Formate, Zipstream-Werte) werden
   einmalig gelesen, nicht bei jeder Aktualisierung.
-- Standbilder werden 2 Sekunden zwischengespeichert.
+- Standbilder werden nicht zwischengespeichert. Jede Anfrage geht an die
+  Kamera.
+- Jede Kamera hat eigene Sitzung, eigene Drossel und eigenen Coordinator.
+  Mehrere Kameras werden gleichzeitig abgefragt, nicht nacheinander.
 
 ## Hinweise
 
