@@ -74,8 +74,15 @@ class AxisZipstreamCamera(AxisEntity, Camera):
         try:
             image = await self.coordinator.client.snapshot(resolution)
         except VapixError as err:
-            _LOGGER.debug("Snapshot failed: %s", err)
-            return self._image
+            # Never serve the previous image here. Doing so hides the failure
+            # and looks exactly like a frozen picture.
+            self._image = None
+            _LOGGER.warning(
+                "Snapshot from %s failed: %s",
+                self.coordinator.client.host,
+                err,
+            )
+            return None
 
         self._image = image
         self._image_time = now
