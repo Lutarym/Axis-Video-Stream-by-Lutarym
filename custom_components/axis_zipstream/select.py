@@ -12,16 +12,19 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from . import AxisCoordinator
 from .const import (
     DEFAULT_RESOLUTION,
+    DEFAULT_TRANSPORT,
     DEFAULT_VIDEOCODEC,
     DOMAIN,
     OPT_ACTIVE_PROFILE,
     OPT_RESOLUTION,
+    OPT_TRANSPORT,
     OPT_VIDEOCODEC,
     OPT_ZFPSMODE,
     OPT_ZGOPMODE,
     OPT_ZSTRENGTH,
     OWNED_PROFILE_NAME,
     ZFPS_MODES,
+    TRANSPORTS,
     ZGOP_MODES,
     ZIPSTREAM_CODEC,
     ZSTRENGTH_FALLBACK,
@@ -41,6 +44,7 @@ async def async_setup_entry(
     async_add_entities(
         [
             AxisStreamProfileSelect(coordinator, entry),
+            AxisTransportSelect(coordinator, entry),
             AxisResolutionSelect(coordinator, entry),
             AxisVideoCodecSelect(coordinator, entry),
             AxisZipstreamStrengthSelect(coordinator, entry),
@@ -129,17 +133,45 @@ class AxisResolutionSelect(_ProfileSelect):
         return [DEFAULT_RESOLUTION]
 
 
-class _ZipstreamSelect(_ProfileSelect):
+class AxisTransportSelect(_ProfileSelect):
+    """Which protocol delivers the live picture."""
+
+    _attr_translation_key = "transport"
+    _attr_icon = "mdi:transit-connection-variant"
+    _option_key = OPT_TRANSPORT
+    _default = DEFAULT_TRANSPORT
+
+    def __init__(self, coordinator: AxisCoordinator, entry: ConfigEntry) -> None:
+        """Initialise."""
+        super().__init__(coordinator, entry, "transport")
+
+    @property
+    def options(self) -> list[str]:
+        """RTSP or HTTP."""
+        return list(TRANSPORTS)
+
+
+class _RtspOnlySelect(_ProfileSelect):
+    """A setting that only applies to the RTSP path."""
+
+    @property
+    def available(self) -> bool:
+        """Unavailable while the live picture is delivered over HTTP."""
+        transport = str(self._entry.options.get(OPT_TRANSPORT, DEFAULT_TRANSPORT))
+        return super().available and transport == "rtsp"
+
+
+class _ZipstreamSelect(_RtspOnlySelect):
     """A Zipstream setting. Only meaningful while the codec is H.264."""
 
     @property
     def available(self) -> bool:
-        """Unavailable when another codec is selected."""
+        """Only meaningful on the RTSP path while the codec is H.264."""
         codec = str(self._entry.options.get(OPT_VIDEOCODEC, DEFAULT_VIDEOCODEC))
         return super().available and codec == ZIPSTREAM_CODEC
 
 
-class AxisVideoCodecSelect(_ProfileSelect):
+class AxisVideoCodecSelect(_RtspOnlySelect):
     """Video codec, restricted to what the camera reports."""
 
     _attr_translation_key = "videocodec"

@@ -76,6 +76,27 @@ Version, ApplicationID, Lizenzstatus und die URL der Konfigurationsseite bereit.
 Die Abfrage läuft nur, wenn die Kamera
 `Properties.EmbeddedDevelopment.Version` 1.20 oder neuer meldet.
 
+## Übertragung wählen
+
+Zwei Entitäten bestimmen, wie das Livebild geliefert wird.
+
+**Übertragung** (`select`)
+
+| Wert | Weg | Codec | Zipstream | Stream-Profil |
+| --- | --- | --- | --- | --- |
+| `rtsp` | `/axis-media/media.amp` | wählbar | ja, bei H.264 | ja |
+| `http` | `/axis-cgi/mjpg/video.cgi` | immer Motion JPEG | nein | nein |
+
+**Videocodec** (`select`)
+
+Nur bei `rtsp` bedienbar, sonst als nicht verfügbar markiert. Die Werte
+stammen aus `Properties.Image.Format`. Zipstream wirkt nur bei `h264`,
+deshalb sind die drei Zipstream-Entitäten bei einem anderen Codec ebenfalls
+nicht verfügbar.
+
+Der HTTP-Weg kennt kein Stream-Profil. Auflösung, Bildrate und
+Komprimierung werden dort direkt an die Adresse angehängt.
+
 ## Verhalten bei mehreren Kameras
 
 - Pro Kamera wird eine HTTP-Sitzung aufgebaut und wiederverwendet, nicht eine
@@ -83,8 +104,9 @@ Die Abfrage läuft nur, wenn die Kamera
 - Gleichzeitige Anfragen an dieselbe Kamera sind auf 2 begrenzt.
 - Fähigkeiten der Kamera (Auflösungen, Formate, Zipstream-Werte) werden
   einmalig gelesen, nicht bei jeder Aktualisierung.
-- Standbilder werden nicht zwischengespeichert. Jede Anfrage geht an die
-  Kamera.
+- Standbilder werden nicht zwischengespeichert.
+- Die Vorschau nutzt den durchgehenden MJPEG-Stream der Kamera
+  (`/axis-cgi/mjpg/video.cgi`), nicht wiederholte Einzelbild-Anfragen.
 - Jede Kamera hat eigene Sitzung, eigene Drossel und eigenen Coordinator.
   Mehrere Kameras werden gleichzeitig abgefragt, nicht nacheinander.
 

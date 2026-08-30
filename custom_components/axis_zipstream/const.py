@@ -18,6 +18,7 @@ OPT_ZSTRENGTH: Final = "videozstrength"
 OPT_ZFPSMODE: Final = "videozfpsmode"
 OPT_ZGOPMODE: Final = "videozgopmode"
 OPT_VIDEOCODEC: Final = "videocodec"
+OPT_TRANSPORT: Final = "transport"
 
 # Name of the stream profile this integration creates and owns.
 # The integration writes ONLY to this profile. It never touches other
@@ -30,6 +31,13 @@ DEFAULT_RESOLUTION: Final = "1280x720"
 DEFAULT_FPS: Final = 15
 DEFAULT_COMPRESSION: Final = 30
 DEFAULT_VIDEOCODEC: Final = "h264"
+DEFAULT_TRANSPORT: Final = "rtsp"
+
+# How the live picture is delivered.
+#   rtsp: /axis-media/media.amp, uses the owned stream profile, supports the
+#         codec choice and Zipstream.
+#   http: /axis-cgi/mjpg/video.cgi, always Motion JPEG, no Zipstream.
+TRANSPORTS: Final = ["rtsp", "http"]
 
 # Documented by Axis: fixed or dynamic. Confirmed present on this device via
 # root.Image.I0.MPEG.ZFpsMode / ZGopMode.
@@ -43,6 +51,7 @@ ZSTRENGTH_FALLBACK: Final = ["off", "10", "20", "30"]
 # VAPIX paths
 PATH_PARAM: Final = "/axis-cgi/param.cgi"
 PATH_SNAPSHOT: Final = "/axis-cgi/jpg/image.cgi"
+PATH_MJPEG: Final = "/axis-cgi/mjpg/video.cgi"
 PATH_RTSP: Final = "/axis-media/media.amp"
 PATH_APPLICATIONS: Final = "/axis-cgi/applications/list.cgi"
 

@@ -21,7 +21,7 @@ from homeassistant.helpers.aiohttp_client import (
     async_get_clientsession,
 )
 
-from .const import MAX_PARALLEL_REQUESTS, PATH_APPLICATIONS, PATH_PARAM, PATH_RTSP, PATH_SNAPSHOT
+from .const import MAX_PARALLEL_REQUESTS, PATH_APPLICATIONS, PATH_MJPEG, PATH_PARAM, PATH_RTSP, PATH_SNAPSHOT
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -404,6 +404,22 @@ class VapixClient:
         if resolution:
             params["resolution"] = resolution
         return await self._request_bytes(PATH_SNAPSHOT, params)
+
+    def open_mjpeg_stream(self, params: dict[str, str]) -> Any:
+        """Return a coroutine that opens the continuous MJPEG stream.
+
+        This keeps one connection open and receives frames as they come,
+        instead of issuing a fresh HTTP request per picture. The caller is
+        responsible for proxying the response.
+
+        Note that videocodec is deliberately not passed: this endpoint always
+        serves Motion JPEG, and the owned stream profile carries an H.264
+        codec that would not apply here.
+        """
+        url = f"{self._base}{PATH_MJPEG}"
+        if self._use_digest:
+            return self._get_digest_session().get(url, params=params)
+        return self._basic_session.get(url, params=params, auth=self._basic)
 
     def rtsp_url(self, profile_name: str) -> str:
         """Build the RTSP URL for a named stream profile."""

@@ -62,6 +62,13 @@
       },
       "videocodec": {
         "name": "Video codec"
+      },
+      "transport": {
+        "name": "Transport",
+        "state": {
+          "rtsp": "RTSP (H.264)",
+          "http": "HTTP (Motion JPEG)"
+        }
       }
     },
     "number": {
