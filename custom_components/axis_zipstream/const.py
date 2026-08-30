@@ -73,6 +73,12 @@ FORMAT_TO_CODEC: Final = {
 # arguments are omitted rather than sent and silently ignored.
 ZIPSTREAM_CODEC: Final = "h264"
 
+# Old cameras degrade under many parallel VAPIX requests.
+MAX_PARALLEL_REQUESTS: Final = 2
+
+# How long a fetched snapshot may be reused before asking the camera again.
+SNAPSHOT_CACHE_SECONDS: Final = 2.0
+
 FPS_MIN: Final = 1
 FPS_MAX: Final = 30
 COMPRESSION_MIN: Final = 0

@@ -14,7 +14,6 @@ from homeassistant.config_entries import (
 )
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import callback
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import (
     NumberSelector,
     NumberSelectorConfig,
@@ -70,7 +69,7 @@ class AxisZipstreamConfigFlow(ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             client = VapixClient(
-                session=async_get_clientsession(self.hass),
+                hass=self.hass,
                 host=user_input[CONF_HOST],
                 username=user_input[CONF_USERNAME],
                 password=user_input[CONF_PASSWORD],

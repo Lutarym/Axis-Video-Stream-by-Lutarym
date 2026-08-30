@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 
 from homeassistant.components.camera import Camera, CameraEntityFeature
 from homeassistant.config_entries import ConfigEntry
@@ -10,7 +11,13 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import AxisCoordinator
-from .const import DEFAULT_RESOLUTION, DOMAIN, OPT_ACTIVE_PROFILE, OWNED_PROFILE_NAME
+from .const import (
+    DEFAULT_RESOLUTION,
+    DOMAIN,
+    OPT_ACTIVE_PROFILE,
+    OWNED_PROFILE_NAME,
+    SNAPSHOT_CACHE_SECONDS,
+)
 from .entity import AxisEntity
 from .vapix import VapixError
 
@@ -38,6 +45,8 @@ class AxisZipstreamCamera(AxisEntity, Camera):
         AxisEntity.__init__(self, coordinator, entry)
         Camera.__init__(self)
         self._attr_unique_id = f"{self._base_unique_id}_camera"
+        self._image: bytes | None = None
+        self._image_time: float = 0.0
 
     @property
     def _active_profile(self) -> str:
@@ -51,13 +60,26 @@ class AxisZipstreamCamera(AxisEntity, Camera):
     async def async_camera_image(
         self, width: int | None = None, height: int | None = None
     ) -> bytes | None:
-        """Fetch a still image over VAPIX."""
+        """Fetch a still image over VAPIX.
+
+        Home Assistant asks several times in quick succession when more than
+        one dashboard card is open. A short cache keeps that from turning
+        into one camera request per card.
+        """
+        now = time.monotonic()
+        if self._image is not None and now - self._image_time < SNAPSHOT_CACHE_SECONDS:
+            return self._image
+
         resolution = self._entry.options.get("resolution", DEFAULT_RESOLUTION)
         try:
-            return await self.coordinator.client.snapshot(resolution)
+            image = await self.coordinator.client.snapshot(resolution)
         except VapixError as err:
             _LOGGER.debug("Snapshot failed: %s", err)
-            return None
+            return self._image
+
+        self._image = image
+        self._image_time = now
+        return image
 
     @property
     def extra_state_attributes(self) -> dict[str, str]:

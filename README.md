@@ -76,6 +76,15 @@ Version, ApplicationID, Lizenzstatus und die URL der Konfigurationsseite bereit.
 Die Abfrage läuft nur, wenn die Kamera
 `Properties.EmbeddedDevelopment.Version` 1.20 oder neuer meldet.
 
+## Verhalten bei mehreren Kameras
+
+- Pro Kamera wird eine HTTP-Sitzung aufgebaut und wiederverwendet, nicht eine
+  je Anfrage.
+- Gleichzeitige Anfragen an dieselbe Kamera sind auf 2 begrenzt.
+- Fähigkeiten der Kamera (Auflösungen, Formate, Zipstream-Werte) werden
+  einmalig gelesen, nicht bei jeder Aktualisierung.
+- Standbilder werden 2 Sekunden zwischengespeichert.
+
 ## Hinweise
 
 - `videozgopmode=dynamic` kann lange Keyframe-Abstände erzeugen. Manche Player

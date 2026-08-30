@@ -10,7 +10,6 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import (
@@ -83,6 +82,7 @@ class AxisCoordinator(DataUpdateCoordinator[AxisData]):
         self.device: dict[str, str] = {}
         self.owned_profile_id: str | None = None
         self.supports_applications = False
+        self._static: tuple[list[str], list[str], list[str]] | None = None
 
     async def _async_update_data(self) -> AxisData:
         try:
@@ -93,20 +93,32 @@ class AxisCoordinator(DataUpdateCoordinator[AxisData]):
         except VapixError as err:
             raise UpdateFailed(str(err)) from err
 
-        resolutions = await self.client.list_resolutions()
-        formats = await self.client.list_formats()
-        codecs = [
-            codec
-            for codec in VIDEOCODECS
-            if codec in {FORMAT_TO_CODEC.get(fmt) for fmt in formats}
-        ]
-
-        allowed = await self.client.list_allowed_values("Image.I0.MPEG.ZStrength")
-        if not allowed:
-            _LOGGER.debug(
-                "Camera did not report allowed ZStrength values, using fallback list"
+        # Capabilities never change while the camera runs, so they are read
+        # once instead of on every refresh. Repeating them multiplied the
+        # request count with every additional camera.
+        if self._static is None:
+            formats = await self.client.list_formats()
+            codecs = [
+                codec
+                for codec in VIDEOCODECS
+                if codec in {FORMAT_TO_CODEC.get(fmt) for fmt in formats}
+            ]
+            allowed = await self.client.list_allowed_values(
+                "Image.I0.MPEG.ZStrength"
             )
-            allowed = list(ZSTRENGTH_FALLBACK)
+            if not allowed:
+                _LOGGER.debug(
+                    "Camera did not report allowed ZStrength values, "
+                    "using fallback list"
+                )
+                allowed = list(ZSTRENGTH_FALLBACK)
+            self._static = (
+                await self.client.list_resolutions(),
+                codecs or [DEFAULT_VIDEOCODEC],
+                allowed,
+            )
+
+        resolutions, codecs, allowed = self._static
 
         # ACAP listing is optional. A camera without embedded development
         # support must not break the rest of the integration.
@@ -128,7 +140,7 @@ class AxisCoordinator(DataUpdateCoordinator[AxisData]):
             allowed_zstrength=allowed,
             applications=applications,
             resolutions=resolutions,
-            codecs=codecs or [DEFAULT_VIDEOCODEC],
+            codecs=codecs,
         )
 
 
@@ -184,9 +196,8 @@ async def _async_supports_applications(client: VapixClient) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Axis Zipstream from a config entry."""
-    session = async_get_clientsession(hass)
     client = VapixClient(
-        session=session,
+        hass=hass,
         host=entry.data[CONF_HOST],
         username=entry.data[CONF_USERNAME],
         password=entry.data[CONF_PASSWORD],
@@ -247,5 +258,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
     unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unloaded:
-        hass.data[DOMAIN].pop(entry.entry_id, None)
+        coordinator: AxisCoordinator | None = hass.data[DOMAIN].pop(
+            entry.entry_id, None
+        )
+        if coordinator is not None:
+            await coordinator.client.async_close()
     return unloaded

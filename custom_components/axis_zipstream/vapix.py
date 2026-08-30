@@ -7,6 +7,7 @@ snapshots. It never writes global Image.I*.MPEG.* parameters.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
@@ -14,8 +15,13 @@ from typing import Any
 from urllib.parse import quote, urlencode
 
 import aiohttp
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.aiohttp_client import (
+    async_create_clientsession,
+    async_get_clientsession,
+)
 
-from .const import PATH_APPLICATIONS, PATH_PARAM, PATH_RTSP, PATH_SNAPSHOT
+from .const import MAX_PARALLEL_REQUESTS, PATH_APPLICATIONS, PATH_PARAM, PATH_RTSP, PATH_SNAPSHOT
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -98,14 +104,14 @@ class VapixClient:
 
     def __init__(
         self,
-        session: aiohttp.ClientSession,
+        hass: HomeAssistant,
         host: str,
         username: str,
         password: str,
         port: int = 80,
     ) -> None:
         """Initialise the client."""
-        self._session = session
+        self._hass = hass
         self._host = host
         self._username = username
         self._password = password
@@ -114,6 +120,35 @@ class VapixClient:
         self._basic = aiohttp.BasicAuth(username, password)
         # Set once we learn which scheme the camera actually wants.
         self._use_digest: bool | None = None
+        # Built once, then reused. Rebuilding a session per request costs a
+        # full connection setup every time, which multiplies with the number
+        # of cameras.
+        self._digest_session: aiohttp.ClientSession | None = None
+        # Old cameras cope badly with many parallel requests, so keep the
+        # number of in-flight requests per camera small.
+        self._limit = asyncio.Semaphore(MAX_PARALLEL_REQUESTS)
+
+    @property
+    def _basic_session(self) -> aiohttp.ClientSession:
+        """Home Assistant's shared, pooled session."""
+        return async_get_clientsession(self._hass)
+
+    def _get_digest_session(self) -> aiohttp.ClientSession:
+        """Return the digest session, creating it once on first use."""
+        if self._digest_session is None or self._digest_session.closed:
+            digest = DigestAuthMiddleware(
+                login=self._username, password=self._password
+            )
+            self._digest_session = async_create_clientsession(
+                self._hass, middlewares=(digest,)
+            )
+        return self._digest_session
+
+    async def async_close(self) -> None:
+        """Close the session owned by this client."""
+        if self._digest_session is not None and not self._digest_session.closed:
+            await self._digest_session.close()
+        self._digest_session = None
 
     @property
     def host(self) -> str:
@@ -126,11 +161,17 @@ class VapixClient:
 
     async def _request_bytes(self, path: str, params: dict[str, str]) -> bytes:
         """Perform a GET, transparently handling basic vs digest auth."""
+        async with self._limit:
+            return await self._do_request(path, params)
+
+    async def _do_request(self, path: str, params: dict[str, str]) -> bytes:
+        """Single GET. Sessions are reused, never created per request."""
         url = f"{self._base}{path}"
 
+        # Only probe basic while the scheme is still unknown or known to work.
         if self._use_digest is not True:
             try:
-                async with self._session.get(
+                async with self._basic_session.get(
                     url, params=params, auth=self._basic, timeout=TIMEOUT
                 ) as resp:
                     if resp.status != 401:
@@ -141,23 +182,22 @@ class VapixClient:
             except aiohttp.ClientError as err:
                 raise VapixConnectionError(str(err)) from err
 
-        # Basic was rejected (or digest already known to be required).
         if not HAS_DIGEST_SUPPORT:
             raise VapixAuthError(
                 "Camera requires digest authentication but the installed "
                 "aiohttp is older than 3.12 and cannot perform it."
             )
 
-        digest = DigestAuthMiddleware(login=self._username, password=self._password)
         try:
-            async with aiohttp.ClientSession(middlewares=(digest,)) as session:
-                async with session.get(url, params=params, timeout=TIMEOUT) as resp:
-                    if resp.status == 401:
-                        raise VapixAuthError("Username or password rejected")
-                    if resp.status >= 400:
-                        raise VapixError(f"HTTP {resp.status} for {path}")
-                    self._use_digest = True
-                    return await resp.read()
+            async with self._get_digest_session().get(
+                url, params=params, timeout=TIMEOUT
+            ) as resp:
+                if resp.status == 401:
+                    raise VapixAuthError("Username or password rejected")
+                if resp.status >= 400:
+                    raise VapixError(f"HTTP {resp.status} for {path}")
+                self._use_digest = True
+                return await resp.read()
         except aiohttp.ClientError as err:
             raise VapixConnectionError(str(err)) from err
 
